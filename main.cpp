@@ -81,7 +81,7 @@ int main(){
     Despacho despacho;
     fstream archivo;
 
-    archivo.open("C:/Users/Tochu/Escritorio/Archivos/Datos.bin", ios::in | ios::binary);
+    archivo.open("Archivos/Datos.bin", ios::in | ios::binary);
     if(!archivo){
         cout << "No se pudo abrir el archivo 'Datos.bin'" << endl;
         return EXIT_FAILURE;
