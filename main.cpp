@@ -17,12 +17,22 @@ struct ProductoDock {
     int cantidad;
 };
 
+struct ProvinciaProducto {
+    string provincia;
+    int cantidad;
+};
+
 const int dimNroDock = 8;
 const int lprod = 10;
 const int lprov = 19;
 
 ostream& operator << (ostream& os, const ProductoDock& d){
     os << d.producto << "\t" << d.cantidad << endl;
+    return os;
+};
+
+ostream& operator << (ostream& os, const ProvinciaProducto& d){
+    os << d.provincia << "\t" << d.cantidad << endl;
     return os;
 };
 
@@ -58,6 +68,18 @@ int criterioProducto(ProductoDock a, ProductoDock b){
     return (a.producto < b.producto) ? -1 : (a.producto > b.producto);
 };
 
+int criterioMayor(int a, int b){
+    return (a > b) ? 0 : -1;
+};
+
+int criterioMenor(int a, int b){
+    return (a < b) ? 0 : -1;
+}; //Se podría haber planteado una única función en la que se resten los dos parámetros y en los 'if' pedir que cumpla si es mayor o menor que 0.
+
+int criterioProvinciaProducto(ProvinciaProducto a, ProvinciaProducto b){
+    return 0; //Hay que listarlos como están en el archivo original.
+}
+
 template <typename T> void borrarSiguiente(Nodo<T>* actual){
     if(actual != nullptr && actual->sig != nullptr){
         Nodo<T>* aux = actual->sig;
@@ -78,11 +100,10 @@ template <typename T> void consolidarCantidadDespachos(Nodo<T>* lista){
 
 int main(){
     Nodo<Despacho>* lista = nullptr;
-    //Nodo<ProductoDock>* productosDock[8];
     Despacho despacho;
     fstream archivo;
 
-    archivo.open("C:/Users/Lauty/Desktop/CARPETA ALG/Datos.bin", ios::in | ios::binary);
+    archivo.open("Datos.bin", ios::in | ios::binary);
     if(!archivo){
         cout << "No se pudo abrir el archivo 'Datos.bin'" << endl;
         return EXIT_FAILURE;
@@ -91,11 +112,8 @@ int main(){
         insertar(despacho, lista, criterioNroDockProducto);
     };
     archivo.close();
-
-      cout << "Mostrando la lista de despachos ordenado por NroDock-Producto:\n" << endl;
     
     for(int i = 0; i < dimNroDock; i++){
-        cout << "NroDock: " << i ;
         int contador = 0;
         Nodo<ProductoDock>* lista2 = nullptr;
         Nodo<Despacho>* aux = lista;
@@ -110,13 +128,52 @@ int main(){
             };
             aux = aux->sig;
         };
-        cout << " - Cantidad de despachos: " << contador << endl;
+        cout << "NroDock: " << i << " - Cantidad de despachos: " << contador << endl;
         consolidarCantidadDespachos(lista2);
         mostrar(lista2);
     };
 
-    //mostrar(lista);
-    //Los productos ya tienen sus cantidades consolidadas.
-    //Falta listar de forma correcta el listado de cada dock (supongo que es con un vector) y poner un contador para cada despacho que se hace.
+    int minDespachos = INT_MAX;
+    int dockMinimo = -1;
+
+    for(int i = 0; i < dimNroDock; i++){
+        int totalDespachos = 0;
+        Nodo<Despacho>* aux = lista;
+
+        while(aux != nullptr){
+            if(aux->dato.nrodock == i){
+                totalDespachos++;
+            };
+            aux = aux->sig;
+        };
+
+        if(criterioMenor(totalDespachos, minDespachos) == 0){
+            minDespachos = totalDespachos;
+            dockMinimo = i;
+        };
+    };
+    cout << "El dock con menos despachos es el: " << i << " con " << minDespachos << " despachos." << endl;
+
+    int mayorCantidad = -1;
+    string productoMayorCantidad;
+    Nodo<Despachos>* aux = lista;
+    Nodo<ProvinciaProducto>* listaProvincias = nullptr;
+
+    while(aux != nullptr){
+        if(aux->dato.nrodock == dockMinimo && criterioMayor(aux->dato.cantidad, mayorCantidad) == 0){
+            mayorCantidad = aux->dato.cantidad;
+            productoMayorCantidad = aux->dato.producto;
+
+            ProvinciaProducto provprod;
+            provprod.provincia = aux->dato.provincia;
+            provprod.cantidad = aux->dato.cantidad;
+            insertar(provprod, listaProvincias, criterioProvinciaProducto); //No es que haya un criterio como tal, hay que listarlos como vienen en el archivo original.
+        };
+        aux = aux->sig;
+    };
+    cout << "El producto con mayor cantidad despachada en este dock es:" << endl;
+    cout << productoMayorCantidad << "\t" << mayorCantidad << endl; //Se pudo haber agregado a una lista y que la muestre, pero no nos parecía útil para solamente mostrar un registro.
+    cout << "Lista de despachos" << endl;
+    mostrar(listaProvincias);
     return 0;
 };
