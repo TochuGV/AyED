@@ -68,7 +68,7 @@ template <typename T> void borrarSiguiente(Nodo<T>* actual){
 
 template <typename T> void consolidarCantidadDespachos(Nodo<T>* lista){
     while(lista != nullptr){
-        while(lista->sig != nullptr && criterioNroDockProducto(lista->dato, lista->sig->dato) == 0){
+        while(lista->sig != nullptr && criterioProducto(lista->dato, lista->sig->dato) == 0){
             lista->dato.cantidad += lista->sig->dato.cantidad;
             borrarSiguiente(lista);
         };
@@ -82,7 +82,7 @@ int main(){
     Despacho despacho;
     fstream archivo;
 
-    archivo.open("Archivos/Datos.bin", ios::in | ios::binary);
+    archivo.open("C:/Users/Lauty/Desktop/CARPETA ALG/Datos.bin", ios::in | ios::binary);
     if(!archivo){
         cout << "No se pudo abrir el archivo 'Datos.bin'" << endl;
         return EXIT_FAILURE;
@@ -92,13 +92,11 @@ int main(){
     };
     archivo.close();
 
-    Nodo<Despacho>* lista2 = nullptr;
-    cout << "Mostrando la lista de despachos ordenado por NroDock-Producto:\n" << endl;
-    consolidarCantidadDespachos(lista);
-    int contador = 0;
-
+      cout << "Mostrando la lista de despachos ordenado por NroDock-Producto:\n" << endl;
+    
     for(int i = 0; i < dimNroDock; i++){
-        cout << "NroDock: " << i << " - Cantidad de despachos: " << endl;
+        cout << "NroDock: " << i ;
+        int contador = 0;
         Nodo<ProductoDock>* lista2 = nullptr;
         Nodo<Despacho>* aux = lista;
 
@@ -108,9 +106,12 @@ int main(){
                 prodock.producto = aux->dato.producto;
                 prodock.cantidad = aux->dato.cantidad;
                 insertar(prodock, lista2, criterioProducto);
+                contador++;
             };
             aux = aux->sig;
         };
+        cout << " - Cantidad de despachos: " << contador << endl;
+        consolidarCantidadDespachos(lista2);
         mostrar(lista2);
     };
 
