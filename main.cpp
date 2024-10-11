@@ -11,20 +11,17 @@ struct Despacho {
     string provincia;
     int cantidad;
 };
-/*
+
 struct ProductoDock {
     string producto;
-    string provincia;
     int cantidad;
 };
-*/
+
 const int dimNroDock = 8;
 const int lprod = 10;
 const int lprov = 19;
 
-ostream& operator << (ostream& os, const Despacho& d){
-    os << "NroDock: " << d.nrodock << " - Cantidad de despachos: " << d.cantidad << endl;
-    cout << "Producto\tCantidad" << endl;
+ostream& operator << (ostream& os, const ProductoDock& d){
     os << d.producto << "\t" << d.cantidad << endl;
     return os;
 };
@@ -44,17 +41,21 @@ fstream& operator >> (fstream& fs, Despacho& d){
     fs.read(reinterpret_cast<char *>(&d.cantidad), sizeof(d.cantidad));
     return fs;
 };
-
+/*
 int criterioNroDock(Despacho a, Despacho b){
     return a.nrodock - b.nrodock;
 };
-
+*/
 int criterioNroDockProducto(Despacho a, Despacho b){
     if(a.nrodock == b.nrodock){
         return (a.producto < b.producto) ? -1 : (a.producto > b.producto);
     } else {
         return a.nrodock - b.nrodock;
     }
+};
+
+int criterioProducto(ProductoDock a, ProductoDock b){
+    return (a.producto < b.producto) ? -1 : (a.producto > b.producto);
 };
 
 template <typename T> void borrarSiguiente(Nodo<T>* actual){
@@ -92,16 +93,28 @@ int main(){
     archivo.close();
 
     Nodo<Despacho>* lista2 = nullptr;
-    int contador = 0;
-
     cout << "Mostrando la lista de despachos ordenado por NroDock-Producto:\n" << endl;
     consolidarCantidadDespachos(lista);
+    int contador = 0;
 
     for(int i = 0; i < dimNroDock; i++){
         cout << "NroDock: " << i << " - Cantidad de despachos: " << endl;
+        Nodo<ProductoDock>* lista2 = nullptr;
+        Nodo<Despacho>* aux = lista;
+
+        while(aux != nullptr){
+            if(aux->dato.nrodock == i){
+                ProductoDock prodock;
+                prodock.producto = aux->dato.producto;
+                prodock.cantidad = aux->dato.cantidad;
+                insertar(prodock, lista2, criterioProducto);
+            };
+            aux = aux->sig;
+        };
+        mostrar(lista2);
     };
 
-    mostrar(lista);
+    //mostrar(lista);
     //Los productos ya tienen sus cantidades consolidadas.
     //Falta listar de forma correcta el listado de cada dock (supongo que es con un vector) y poner un contador para cada despacho que se hace.
     return 0;
