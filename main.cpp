@@ -30,12 +30,12 @@ ostream& operator << (ostream& os, const ProductoDock& d){
     os << d.producto << "\t" << d.cantidad << endl;
     return os;
 };
-
+/*
 ostream& operator << (ostream& os, const ProvinciaProducto& d){
     os << d.provincia << "\t" << d.cantidad << endl;
     return os;
 };
-
+*/
 fstream& operator << (fstream& fs, const Despacho& d){
     fs.write(reinterpret_cast<const char *>(&d.nrodock), sizeof(d.nrodock));
     writestring(fs, d.producto, lprod);
@@ -153,7 +153,7 @@ int main(){
         };
     };
     cout << "El dock con menos despachos es el: " << i << " con " << minDespachos << " despachos." << endl;
-
+/*
     int mayorCantidad = -1;
     string productoMayorCantidad;
     Nodo<Despachos>* aux = lista;
@@ -174,6 +174,6 @@ int main(){
     cout << "El producto con mayor cantidad despachada en este dock es:" << endl;
     cout << productoMayorCantidad << "\t" << mayorCantidad << endl; //Se pudo haber agregado a una lista y que la muestre, pero no nos parecía útil para solamente mostrar un registro.
     cout << "Lista de despachos" << endl;
-    mostrar(listaProvincias);
+    mostrar(listaProvincias);*/
     return 0;
 };
