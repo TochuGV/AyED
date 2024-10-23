@@ -51,11 +51,7 @@ fstream& operator >> (fstream& fs, Despacho& d){
     fs.read(reinterpret_cast<char *>(&d.cantidad), sizeof(d.cantidad));
     return fs;
 };
-/*
-int criterioNroDock(Despacho a, Despacho b){
-    return a.nrodock - b.nrodock;
-};
-*/
+
 int criterioNroDockProducto(Despacho a, Despacho b){
     if(a.nroDock == b.nroDock){
         return (a.producto < b.producto) ? -1 : (a.producto > b.producto);
@@ -74,11 +70,11 @@ int criterioMayor(int a, int b){
 
 int criterioMenor(int a, int b){
     return (a < b) ? 0 : -1;
-}; //Se podría haber planteado una única función en la que se resten los dos parámetros y en los 'if' pedir que cumpla si es mayor o menor que 0.
+}; //Se podría haber planteado una única función (para criterioMayor y criterioMenor) en la que se resten los dos parámetros y en los 'if' pedir que cumpla si es mayor o menor que 0.
 
 int criterioProvinciaProducto(ProvinciaProducto a, ProvinciaProducto b){
     return 0; //Hay que listarlos como están en el archivo original.
-}
+};
 
 template <typename T> void borrarSiguiente(Nodo<T>* actual){
     if(actual != nullptr && actual->sig != nullptr){
@@ -101,6 +97,7 @@ template <typename T> void consolidarCantidadDespachos(Nodo<T>* lista){
 int main(){
     Nodo<Despacho>* listaDespachos = nullptr;
     Despacho despacho;
+    ProductoDock prodock;
     fstream archivo;
     const string ruta = "Archivos/Datos.bin";
 
@@ -116,12 +113,11 @@ int main(){
     
     for(int i = 0; i < dimNroDock; i++){
         int contador = 0;
-        Nodo<ProductoDock>* listaProductos = nullptr;
         Nodo<Despacho>* aux = listaDespachos;
+        Nodo<ProductoDock>* listaProductos = nullptr;
 
         while(aux != nullptr){
             if(aux->dato.nroDock == i){
-                ProductoDock prodock;
                 prodock.producto = aux->dato.producto;
                 prodock.cantidad = aux->dato.cantidad;
                 insertar(prodock, listaProductos, criterioProducto);
@@ -136,6 +132,7 @@ int main(){
 
     int minDespachos = INT_MAX;
     int dockMinimo = -1;
+    int clave = 0;
 
     for(int i = 0; i < dimNroDock; i++){
         int totalDespachos = 0;
@@ -147,35 +144,56 @@ int main(){
             };
             aux = aux->sig;
         };
-
         if(criterioMenor(totalDespachos, minDespachos) == 0){
             minDespachos = totalDespachos;
             dockMinimo = i;
         };
     };
-    cout << "El dock con menos despachos es el: " << dockMinimo << " con " << minDespachos << " despachos." << endl;
 
-    int mayorCantidad = -1;
-    string productoMayorCantidad;
     Nodo<Despacho>* aux = listaDespachos;
-    Nodo<ProvinciaProducto>* listaProvincias = nullptr;
-/*
-    while(aux != nullptr){
-        if(aux->dato.nrodock == dockMinimo && criterioMayor(aux->dato.cantidad, mayorCantidad) == 0){
-            mayorCantidad = aux->dato.cantidad;
-            productoMayorCantidad = aux->dato.producto;
+    Nodo<ProductoDock>* listaProductos = nullptr;
 
-            ProvinciaProducto provprod;
-            provprod.provincia = aux->dato.provincia;
-            provprod.cantidad = aux->dato.cantidad;
-            insertar(provprod, listaProvincias, criterioProvinciaProducto); //No es que haya un criterio como tal, hay que listarlos como vienen en el archivo original.
+    while(aux != nullptr){
+        if(aux->dato.nroDock == dockMinimo){
+            prodock.producto = aux->dato.producto;
+            prodock.cantidad = aux->dato.cantidad;
+            insertar(prodock, listaProductos, criterioProducto);
         };
         aux = aux->sig;
     };
+
+    consolidarCantidadDespachos(listaProductos);
+    Nodo<ProductoDock>* aux2 = listaProductos;
+    Nodo<ProductoDock>* productoMayorCantidad = nullptr;
+    int minCantidadDespachada = INT_MIN;
+    
+    while(aux2 != nullptr){
+        int cantidadDespachada = aux2->dato.cantidad;
+        if(criterioMayor(cantidadDespachada, minCantidadDespachada) == 0){
+            minCantidadDespachada = cantidadDespachada;
+            prodock.producto = aux2->dato.producto;
+            prodock.cantidad = aux2->dato.cantidad;
+        };
+        aux2 = aux2->sig;
+    };
+    insertar(prodock, productoMayorCantidad, criterioProducto);
+    cout << "El dock con menos despachos es el: " << dockMinimo << " con " << minDespachos << " despachos." << endl;
     cout << "El producto con mayor cantidad despachada en este dock es:" << endl;
-    cout << productoMayorCantidad << "\t" << mayorCantidad << endl; //Se pudo haber agregado a una lista y que la muestre, pero no nos parecía útil para solamente mostrar un registro.
+    mostrar(productoMayorCantidad);
+
+    Nodo<ProvinciaProducto>* listaProvincias = nullptr;
+    ProvinciaProducto provprod;
+
+    while(listaDespachos != nullptr){
+        if(listaDespachos->dato.nroDock == dockMinimo && listaDespachos->dato.producto == productoMayorCantidad->dato.producto){
+            provprod.provincia = listaDespachos->dato.provincia;
+            provprod.cantidad = listaDespachos->dato.cantidad;
+            insertar(provprod, listaProvincias, criterioProvinciaProducto);
+        };
+        listaDespachos = listaDespachos->sig;
+    };
     cout << "Lista de despachos" << endl;
     cout << "Provincia\tCantidad" << endl;
-    mostrar(listaProvincias);*/
+    mostrar(listaProvincias);
     return 0;
 };
