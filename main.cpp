@@ -99,7 +99,7 @@ int main(){
     Despacho despacho;
     ProductoDock prodock;
     fstream archivo;
-    const string ruta = "C:/Users/Tochu/Desktop/AyED - TP1/Archivos/Datos.bin";
+    const string ruta = "Archivos/Datos.bin";
     
     //Punto 2
     
