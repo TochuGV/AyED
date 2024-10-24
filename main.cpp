@@ -64,6 +64,10 @@ int criterioProducto(ProductoDock a, ProductoDock b){
     return (a.producto < b.producto) ? -1 : (a.producto > b.producto);
 };
 
+int criterioProvinciaProducto(ProvinciaProducto a, ProvinciaProducto b){
+    return 0; //Hay que listarlos como están en el archivo original.
+};
+
 int criterioMayor(int a, int b){
     return (a > b) ? 0 : -1;
 };
@@ -71,10 +75,6 @@ int criterioMayor(int a, int b){
 int criterioMenor(int a, int b){
     return (a < b) ? 0 : -1;
 }; //Se podría haber planteado una única función (para criterioMayor y criterioMenor) en la que se resten los dos parámetros y en los 'if' pedir que cumpla si es mayor o menor que 0.
-
-int criterioProvinciaProducto(ProvinciaProducto a, ProvinciaProducto b){
-    return 0; //Hay que listarlos como están en el archivo original.
-};
 
 template <typename T> void borrarSiguiente(Nodo<T>* actual){
     if(actual != nullptr && actual->sig != nullptr){
@@ -99,8 +99,10 @@ int main(){
     Despacho despacho;
     ProductoDock prodock;
     fstream archivo;
-    const string ruta = "Archivos/Datos.bin";
-
+    const string ruta = "C:/Users/Tochu/Desktop/AyED - TP1/Archivos/Datos.bin";
+    
+    //Punto 2
+    
     archivo.open(ruta, ios::in | ios::binary);
     if(!archivo){
         cout << "No se pudo abrir el archivo 'Datos.bin'" << endl;
@@ -110,6 +112,8 @@ int main(){
         insertar(despacho, listaDespachos, criterioNroDockProducto);
     };
     archivo.close();
+    
+    //Punto 3
     
     for(int i = 0; i < dimNroDock; i++){
         int contador = 0;
@@ -130,9 +134,12 @@ int main(){
         mostrar(listaProductos);
     };
 
+    //Punto 4
+    
+    //Buscar dock con menor cantidad de despachos.
+    
     int minDespachos = INT_MAX;
     int dockMinimo = -1;
-    int clave = 0;
 
     for(int i = 0; i < dimNroDock; i++){
         int totalDespachos = 0;
@@ -150,20 +157,21 @@ int main(){
         };
     };
 
+    //Buscar producto con mayor cantidad despachada. 
+    
     Nodo<Despacho>* aux = listaDespachos;
-    Nodo<ProductoDock>* listaProductos = nullptr;
+    Nodo<ProductoDock>* listaProductosDockMinimo = nullptr;
 
     while(aux != nullptr){
         if(aux->dato.nroDock == dockMinimo){
             prodock.producto = aux->dato.producto;
             prodock.cantidad = aux->dato.cantidad;
-            insertar(prodock, listaProductos, criterioProducto);
+            insertar(prodock, listaProductosDockMinimo, criterioProducto);
         };
         aux = aux->sig;
     };
-
-    consolidarCantidadDespachos(listaProductos);
-    Nodo<ProductoDock>* aux2 = listaProductos;
+    consolidarCantidadDespachos(listaProductosDockMinimo);
+    Nodo<ProductoDock>* aux2 = listaProductosDockMinimo;
     Nodo<ProductoDock>* productoMayorCantidad = nullptr;
     int minCantidadDespachada = INT_MIN;
     
@@ -181,16 +189,19 @@ int main(){
     cout << "El producto con mayor cantidad despachada en este dock es:" << endl;
     mostrar(productoMayorCantidad);
 
+    //Listar provincias de ese producto de ese dock.
+
+    Nodo<Despacho>* aux3 = listaDespachos;
     Nodo<ProvinciaProducto>* listaProvincias = nullptr;
     ProvinciaProducto provprod;
 
-    while(listaDespachos != nullptr){
-        if(listaDespachos->dato.nroDock == dockMinimo && listaDespachos->dato.producto == productoMayorCantidad->dato.producto){
-            provprod.provincia = listaDespachos->dato.provincia;
-            provprod.cantidad = listaDespachos->dato.cantidad;
+    while(aux3 != nullptr){
+        if(aux3->dato.nroDock == dockMinimo && aux3->dato.producto == productoMayorCantidad->dato.producto){
+            provprod.provincia = aux3->dato.provincia;
+            provprod.cantidad = aux3->dato.cantidad;
             insertar(provprod, listaProvincias, criterioProvinciaProducto);
         };
-        listaDespachos = listaDespachos->sig;
+        aux3 = aux3->sig;
     };
     cout << "Lista de despachos" << endl;
     cout << "Provincia\tCantidad" << endl;
