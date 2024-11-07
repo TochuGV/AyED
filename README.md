@@ -2,6 +2,6 @@
 
 ## Integrantes 
   - Lautaro Dascenzo
-  - Leandro Aufieri
+  - Aufieri Leandro
   - Tobías Vallejos
   - José Ignacio Irastorza Bauque
