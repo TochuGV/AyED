@@ -90,7 +90,7 @@ int main(){
     fstream archivo;
     const string ruta = "C:/Users/Tochu/Desktop/AyED - TP2/Archivos/Datos.bin";
 
-    //Punto 2
+    // Punto 2
 
     archivo.open(ruta, ios::in | ios::binary);
     if(!archivo){
@@ -102,13 +102,13 @@ int main(){
     };
     archivo.close();
 
-    //Punto 3
+    // Punto 3
 
     cout << "Producto\tCantidad" << endl;
     consolidarCantidadProductos(listaLotes);
     mostrar(listaLotes);
 
-    //Punto 4
+    // Punto 4
 
     Nodo<ProductoLote>* listaPedidos = nullptr;
     cout << "Ingrese un nuevo pedido:" << endl;
@@ -127,7 +127,7 @@ int main(){
     mostrar(listaPedidos);
     Nodo<Lote>* aux = listaLotes;
 
-//Se muestra solo el último objeto de la lista.
+//Se muestra solo el último objeto de la lista
 
     while(listaLotes != nullptr){
         if(listaLotes->dato.producto == listaPedidos->dato.producto){
