@@ -51,7 +51,7 @@ int criterioLoteCantidad(LoteCantidad a, LoteCantidad b){
 
 int main(){
     fstream archivo;
-    const string ruta = "Datos.bin";
+    const string ruta = "C:/Users/Tochu/Desktop/AyED - TP2/Archivos/Datos.bin";
 
     //Punto 2
 
@@ -62,9 +62,9 @@ int main(){
     };
     Nodo<ProductoCantidad>* lista = nullptr;
     Nodo<ProductoCantidad>* pnodo;
-    Registro reg;
     ProductoCantidad pc;
     LoteCantidad lc;
+    Registro reg;
     while(archivo << reg){
         pc.producto = reg.producto;
         pnodo = insertar_unico(pc, lista, criterioProductoCantidad);
@@ -90,17 +90,59 @@ int main(){
     if(cin >> pc.producto){
         cout << "Cantidad: ";
     };
+
     while(cin >> pc.cantidad){
         agregar(listaPedidos, pc);
         cout << "Producto: ";
         if(cin >> pc.producto){
             cout << "Cantidad: ";
+            while(cin >> pc.cantidad){
+                agregar(listaPedidos, pc);
+                cout << "Producto: ";
+                if(cin >> pc.producto){
+                    cout << "Cantidad: ";
+                };
+            };
         };
+        while(listaPedidos != nullptr){
+            pnodo = buscar(listaPedidos->dato, lista, criterioProductoCantidad);
+            if(pnodo != nullptr){
+                if(pnodo->dato.cantidad >= listaPedidos->dato.cantidad){
+                    cout << "Pedido despachado" << endl;
+                    pnodo->dato.cantidad -= listaPedidos->dato.cantidad;
+                    Nodo<LoteCantidad>* listaStockDespachado = nullptr;
+                    int cantidadLotes = 0;
+                    while(cantidadLotes < listaPedidos->dato.cantidad && pnodo->dato.lista != nullptr){
+                        if(pnodo->dato.lista->sig != nullptr){
+                            cantidadLotes += pnodo->dato.lista->dato.cantidad;
+                            lc.lote = pnodo->dato.lista->dato.lote;
+                            lc.cantidad = pnodo->dato.lista->dato.cantidad;
+                            if(cantidadLotes > listaPedidos->dato.cantidad){
+                                lc.lote = pnodo->dato.lista->dato.lote;
+                                lc.cantidad = listaPedidos->dato.cantidad - (cantidadLotes - pnodo->dato.lista->dato.cantidad);
+                            };
+                            agregar(listaStockDespachado, lc);
+                            pnodo->dato.lista = pnodo->dato.lista->sig;
+                        };
+                    };
+                    cout << "Producto: " << listaPedidos->dato.producto << " - Cantidad total: " << listaPedidos->dato.cantidad << " - Detalle de los lotes:" << endl;
+                    mostrar(listaStockDespachado);
+                };
+            } else {
+                cout << "Pedido rechazado. Listado de faltantes" << endl;
+                cout << listaPedidos->dato.producto << "\t" << listaPedidos->dato.cantidad << endl;
+            };
+
+            listaPedidos = listaPedidos->sig;
+        };
+        cout << "Ingrese un nuevo pedido:" << endl;
+        cout << "Producto: ";
+        if(cin >> pc.producto){
+            cout << "Cantidad: ";
+        };  
     };
 
-    mostrar(listaPedidos); //Después lo borro.
-    Nodo<LoteCantidad>* listaStockDespachado = nullptr;
-
+/*
     while(listaPedidos != nullptr){
         while(lista != nullptr){
             if(listaPedidos->dato.producto == lista->dato.producto){
@@ -133,6 +175,6 @@ int main(){
         };
         listaPedidos = listaPedidos->sig;
     };
-
-    return 0; //POR AHORA SOLO FUNCIONA PARA EL PRIMER REGISTRO DEL PRIMER PEDIDO.
+*/
+    return 0; //POR AHORA SOLO FUNCIONA PARA EL PRIMER PEDIDO.
 }
