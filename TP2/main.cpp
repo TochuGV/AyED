@@ -25,7 +25,7 @@ const int lprod = 10;
 const int llote = 6;
 
 ostream& operator << (ostream& os, const ProductoCantidad& pc){
-    os << pc.producto << "\t" << pc.cantidad << endl;
+    os << pc.producto << "\t" << pc.cantidad;
     return os;
 };
 
@@ -49,9 +49,94 @@ int criterioLoteCantidad(LoteCantidad a, LoteCantidad b){
     return b.lote.compare(a.lote);
 };
 
+int criterioMenor(int a, int b){
+    return b-a;
+};
+
+void procesarDespachos(Nodo<ProductoCantidad>*& lista, Nodo<ProductoCantidad>*& pnodo, Nodo<ProductoCantidad>*& listaPedidos){
+    Nodo<ProductoCantidad>* aux = listaPedidos;
+    Nodo<ProductoCantidad>* listaFaltantes = nullptr;
+
+    while(aux != nullptr){
+        pnodo = buscar(aux->dato, lista, criterioProductoCantidad);
+        if(pnodo == nullptr || pnodo->dato.cantidad < aux->dato.cantidad){
+            ProductoCantidad pc;
+            pc.producto = aux->dato.producto;
+            pc.cantidad = (pnodo == nullptr) ? aux->dato.cantidad : (aux->dato.cantidad - pnodo->dato.cantidad);
+            agregar(listaFaltantes, pc);
+        };
+        aux = aux->sig;
+    };
+
+    if(listaFaltantes != nullptr){
+        cout << "\nPedido rechazado. Listado de faltantes:" << endl;
+        mostrar(listaFaltantes);
+        return;
+    } else {
+        if(listaPedidos != nullptr){
+            cout << "\nPedido despachado" << endl;
+        };
+    };
+
+    while(listaPedidos != nullptr){
+        pnodo = buscar(listaPedidos->dato, lista, criterioProductoCantidad);
+        cout << "Producto: " << listaPedidos->dato.producto << " - Cantidad total: " << listaPedidos->dato.cantidad << " - Detalle de los lotes:" << endl;
+        Nodo<LoteCantidad>* nodolc = pnodo->dato.lista;
+        int cantidadPedida = listaPedidos->dato.cantidad;
+
+        while(nodolc != nullptr && cantidadPedida > 0){
+            int cantidadUsada = (criterioMenor(nodolc->dato.cantidad, cantidadPedida) < 0) ? cantidadPedida : nodolc->dato.cantidad;
+            cout << nodolc->dato.lote << "\t" << cantidadUsada << endl;
+
+            nodolc->dato.cantidad -= cantidadUsada;
+            cantidadPedida -= cantidadUsada;
+
+            if(nodolc->dato.cantidad == 0){
+                Nodo<LoteCantidad>* aux = nodolc;
+                nodolc = nodolc->sig;
+                borrar(aux->dato, pnodo->dato.lista, criterioLoteCantidad);
+            } else {
+                nodolc = nodolc->sig;
+            };
+        };
+        pnodo->dato.cantidad -= listaPedidos->dato.cantidad;
+        listaPedidos = listaPedidos->sig;
+    };
+};
+
+void realizarDespachos(Nodo<ProductoCantidad>*& lista, Nodo<ProductoCantidad>*& pnodo){
+    while(true){
+        Nodo<ProductoCantidad>* listaPedidos = nullptr;
+        ProductoCantidad pc;
+
+        cout << "\nIngrese un nuevo pedido:" << endl;
+        cout << "Producto: ";
+        if(cin >> pc.producto){
+            if(pc.producto == "Stock"){
+                string siguiente;
+                cin >> siguiente;
+                if(siguiente == "Final"){
+                    return;
+                };
+            };
+            cout << "Cantidad: ";
+        };
+        while(cin >> pc.cantidad){
+            agregar(listaPedidos, pc);
+            cout << "Producto: ";
+            if(cin >> pc.producto){
+                cout << "Cantidad: ";
+            };
+        };
+
+        procesarDespachos(lista, pnodo, listaPedidos);
+        cin.clear();
+    };
+};
+
 int main(){
     fstream archivo;
-    const string ruta = "C:/Users/Tochu/Desktop/AyED - TP2/Archivos/Datos.bin";
+    const string ruta = "Datos.bin";
 
     //Punto 2
 
@@ -84,97 +169,11 @@ int main(){
 
     //Punto 4
 
-    Nodo<ProductoCantidad>* listaPedidos = nullptr;
-    cout << "Ingrese un nuevo pedido:" << endl;
-    cout << "Producto: ";
-    if(cin >> pc.producto){
-        cout << "Cantidad: ";
-    };
+    realizarDespachos(lista, pnodo);
 
-    while(cin >> pc.cantidad){
-        agregar(listaPedidos, pc);
-        cout << "Producto: ";
-        if(cin >> pc.producto){
-            cout << "Cantidad: ";
-            while(cin >> pc.cantidad){
-                agregar(listaPedidos, pc);
-                cout << "Producto: ";
-                if(cin >> pc.producto){
-                    cout << "Cantidad: ";
-                };
-            };
-        };
-        while(listaPedidos != nullptr){
-            pnodo = buscar(listaPedidos->dato, lista, criterioProductoCantidad);
-            if(pnodo != nullptr){
-                if(pnodo->dato.cantidad >= listaPedidos->dato.cantidad){
-                    cout << "Pedido despachado" << endl;
-                    pnodo->dato.cantidad -= listaPedidos->dato.cantidad;
-                    Nodo<LoteCantidad>* listaStockDespachado = nullptr;
-                    int cantidadLotes = 0;
-                    while(cantidadLotes < listaPedidos->dato.cantidad && pnodo->dato.lista != nullptr){
-                        if(pnodo->dato.lista->sig != nullptr){
-                            cantidadLotes += pnodo->dato.lista->dato.cantidad;
-                            lc.lote = pnodo->dato.lista->dato.lote;
-                            lc.cantidad = pnodo->dato.lista->dato.cantidad;
-                            if(cantidadLotes > listaPedidos->dato.cantidad){
-                                lc.lote = pnodo->dato.lista->dato.lote;
-                                lc.cantidad = listaPedidos->dato.cantidad - (cantidadLotes - pnodo->dato.lista->dato.cantidad);
-                            };
-                            agregar(listaStockDespachado, lc);
-                            pnodo->dato.lista = pnodo->dato.lista->sig;
-                        };
-                    };
-                    cout << "Producto: " << listaPedidos->dato.producto << " - Cantidad total: " << listaPedidos->dato.cantidad << " - Detalle de los lotes:" << endl;
-                    mostrar(listaStockDespachado);
-                };
-            } else {
-                cout << "Pedido rechazado. Listado de faltantes" << endl;
-                cout << listaPedidos->dato.producto << "\t" << listaPedidos->dato.cantidad << endl;
-            };
+    //Punto 5
+    cout << "Producto\tCantidad" << endl;
+    mostrar(lista);
 
-            listaPedidos = listaPedidos->sig;
-        };
-        cout << "Ingrese un nuevo pedido:" << endl;
-        cout << "Producto: ";
-        if(cin >> pc.producto){
-            cout << "Cantidad: ";
-        };  
-    };
-
-/*
-    while(listaPedidos != nullptr){
-        while(lista != nullptr){
-            if(listaPedidos->dato.producto == lista->dato.producto){
-                int cantidadLotes = 0;
-                if(lista->dato.cantidad >= listaPedidos->dato.cantidad){
-                    lista->dato.cantidad -= listaPedidos->dato.cantidad;
-                    while(cantidadLotes < listaPedidos->dato.cantidad && lista->dato.lista != nullptr){
-                        if(lista->dato.lista->sig != nullptr){
-                            cantidadLotes += lista->dato.lista->dato.cantidad;
-                            lc.lote = lista->dato.lista->dato.lote;
-                            lc.cantidad = lista->dato.lista->dato.cantidad;
-                            if(cantidadLotes > listaPedidos->dato.cantidad){
-                                lc.lote = lista->dato.lista->dato.lote;
-                                lc.cantidad = listaPedidos->dato.cantidad - (cantidadLotes - lista->dato.lista->dato.cantidad);
-                            };
-                            agregar(listaStockDespachado, lc);
-                            lista->dato.lista = lista->dato.lista->sig;
-                        };
-                    };
-                    cout << "Pedido despachado" << endl;
-                    cout << "Producto: " << listaPedidos->dato.producto << " - Cantidad total: " << listaPedidos->dato.cantidad << " - Detalle de los lotes:" << endl;
-                    mostrar(listaStockDespachado);
-                } else {
-                    int cantidadFaltante = listaPedidos->dato.cantidad - lista->dato.cantidad;
-                    cout << "Pedido rechazado. Listado de faltantes" << endl;
-                    cout << listaPedidos->dato.producto << "\t" << cantidadFaltante << endl;
-                };
-            };
-            lista = lista->sig;
-        };
-        listaPedidos = listaPedidos->sig;
-    };
-*/
-    return 0; //POR AHORA SOLO FUNCIONA PARA EL PRIMER PEDIDO.
-}
+    return 0;
+};
