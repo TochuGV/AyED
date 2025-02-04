@@ -2,89 +2,84 @@
 #include <fstream>
 #include "listas.hpp"
 #include "rwstring.hpp"
-
 using namespace std;
 
-struct Despacho {
+struct Registro{
     int nroDock;
     string producto;
     string provincia;
     int cantidad;
 };
 
-struct ProductoDock {
-    string producto;
+struct Provincia{ //Nivel 3
+    string provincia;
     int cantidad;
 };
 
-struct ProvinciaProducto {
-    string provincia;
-    int cantidad;
+struct Producto{ //Nivel 2
+    string producto;
+    int cantidad = 0;
+    Nodo<Provincia>* listaPronvicias = nullptr;
+};
+
+struct Dock{ //Nivel 1
+    int nroDock;
+    int cantidadDespachos = 0;
+    Nodo<Producto>* listaProductos = nullptr;
 };
 
 const int dimNroDock = 8;
 const int lprod = 10;
 const int lprov = 19;
 
-ostream& operator << (ostream& os, const ProductoDock& d){
-    os << d.producto << "\t" << d.cantidad << endl;
+ostream& operator << (ostream& os, const Dock& dock){
+    os << "NroDock: " << dock.nroDock << " - Cantidad de Despachos: " << dock.cantidadDespachos;
     return os;
 };
 
-ostream& operator << (ostream& os, const ProvinciaProducto& d){
-    os << d.provincia << "\t" << d.cantidad << endl;
+ostream& operator << (ostream& os, const Producto& prod){
+    os << prod.producto << "\t" << prod.cantidad;
     return os;
 };
 
-fstream& operator << (fstream& fs, const Despacho& d){
-    fs.write(reinterpret_cast<const char *>(&d.nroDock), sizeof(d.nroDock));
-    writestring(fs, d.producto, lprod);
-    writestring(fs, d.provincia, lprov);
-    fs.write(reinterpret_cast<const char *>(&d.cantidad), sizeof(d.cantidad));
+ostream& operator << (ostream& os, const Provincia& prov){
+    os << prov.provincia << "\t" << prov.cantidad;
+    return os;
+};
+
+fstream& operator >> (fstream& fs, Registro& reg){
+    fs.read(reinterpret_cast<char *>(&reg.nroDock), sizeof(reg.nroDock));
+    reg.producto = readstring(fs, lprod);
+    reg.provincia = readstring(fs, lprov);
+    fs.read(reinterpret_cast<char *>(&reg.cantidad), sizeof(reg.cantidad));
     return fs;
 };
 
-fstream& operator >> (fstream& fs, Despacho& d){
-    fs.read(reinterpret_cast<char *>(&d.nroDock), sizeof(d.nroDock));
-    d.producto = readstring(fs, lprod);
-    d.provincia = readstring(fs, lprov);
-    fs.read(reinterpret_cast<char *>(&d.cantidad), sizeof(d.cantidad));
-    return fs;
+int criterioDock(Dock a, Dock b){
+    return a.nroDock - b.nroDock;
 };
 
-int criterioNroDockProducto(Despacho a, Despacho b){
-    if(a.nroDock == b.nroDock){
-        return (a.producto < b.producto) ? -1 : (a.producto > b.producto);
-    } else {
-        return a.nroDock - b.nroDock;
-    }
-};
-
-int criterioProducto(ProductoDock a, ProductoDock b){
+int criterioProducto(Producto a, Producto b){
     return (a.producto < b.producto) ? -1 : (a.producto > b.producto);
 };
 
-int criterioProvinciaProducto(ProvinciaProducto a, ProvinciaProducto b){
-    return 0; //Hay que listarlos como están en el archivo original.
+int criterioMenor(int a, int b){
+    return (a < b) ? 0 : -1;
 };
 
 int criterioMayor(int a, int b){
     return (a > b) ? 0 : -1;
 };
 
-int criterioMenor(int a, int b){
-    return (a < b) ? 0 : -1;
-}; //Se podría haber planteado una única función (para criterioMayor y criterioMenor) en la que se resten los dos parámetros y en los 'if' pedir que cumpla si es mayor o menor que 0.
-
 template <typename T> void borrarSiguiente(Nodo<T>* actual){
     if(actual != nullptr && actual->sig != nullptr){
         Nodo<T>* aux = actual->sig;
         actual->sig = actual->sig->sig;
         delete aux;
-    }
+    };
 };
 
-template <typename T> void consolidarCantidadDespachos(Nodo<T>* lista){
+template <typename T> void consolidar(Nodo<T>* lista){
     while(lista != nullptr){
         while(lista->sig != nullptr && criterioProducto(lista->dato, lista->sig->dato) == 0){
             lista->dato.cantidad += lista->sig->dato.cantidad;
@@ -95,116 +90,75 @@ template <typename T> void consolidarCantidadDespachos(Nodo<T>* lista){
 };
 
 int main(){
-    Nodo<Despacho>* listaDespachos = nullptr;
-    Despacho despacho;
-    ProductoDock prodock;
     fstream archivo;
-    const string ruta = "Archivos/Datos.bin";
-    
-    //Punto 2
-    
+    const string ruta = "Datos.bin";
     archivo.open(ruta, ios::in | ios::binary);
     if(!archivo){
-        cout << "No se pudo abrir el archivo 'Datos.bin'" << endl;
+        cout << "No se pudo abrir el archivo de datos" << endl;
         return EXIT_FAILURE;
     };
-    while(archivo >> despacho){
-        insertar(despacho, listaDespachos, criterioNroDockProducto);
+    Nodo<Dock>* lista = nullptr;
+    Nodo<Dock>* pnodo;
+    Nodo<Producto>* qnodo;
+    Registro reg;
+    Dock dock;
+    Producto prod;
+    Provincia prov;
+    while(archivo >> reg){
+        dock.nroDock = reg.nroDock;
+        pnodo = insertar_unico(dock, lista, criterioDock);
+        pnodo->dato.cantidadDespachos++;
+        
+        prod.producto = reg.producto;
+        qnodo = insertar_unico(prod, pnodo->dato.listaProductos, criterioProducto);
+        qnodo->dato.cantidad += reg.cantidad;
+        
+        prov.provincia = reg.provincia;
+        prov.cantidad = reg.cantidad;
+        agregar(qnodo->dato.listaPronvicias, prov);
     };
     archivo.close();
-    
-    //Punto 3
-    
-    for(int i = 0; i < dimNroDock; i++){
-        int contador = 0;
-        Nodo<Despacho>* aux = listaDespachos;
-        Nodo<ProductoDock>* listaProductos = nullptr;
 
-        while(aux != nullptr){
-            if(aux->dato.nroDock == i){
-                prodock.producto = aux->dato.producto;
-                prodock.cantidad = aux->dato.cantidad;
-                insertar(prodock, listaProductos, criterioProducto);
-                contador++;
+    int dockMinCant = -1;
+    int despachosDockMinCant = -1;
+    string nomProdMaxCant;
+    int cantProdMaxCant = -1;
+    Nodo<Provincia>* listaProvinciasProdMaxCant = nullptr;
+
+    while(lista != nullptr){
+        cout << "\n" << lista->dato << endl;
+        int cantDespachosActual = lista->dato.cantidadDespachos;
+        if(despachosDockMinCant < 0){
+            despachosDockMinCant = lista->dato.cantidadDespachos;
+        };
+        if(criterioMenor(cantDespachosActual, despachosDockMinCant) == 0){
+            dockMinCant = lista->dato.nroDock;
+            despachosDockMinCant = lista->dato.cantidadDespachos;
+        };
+        Nodo<Producto>* lista2 = lista->dato.listaProductos;
+        if(lista2 != nullptr){
+            consolidar(lista2);
+            mostrar(lista2);
+            if(lista->dato.nroDock == dockMinCant){
+                while(lista2 != nullptr){
+                    if(criterioMayor(lista2->dato.cantidad, cantProdMaxCant) == 0){
+                        nomProdMaxCant = lista2->dato.producto;
+                        cantProdMaxCant = lista2->dato.cantidad;
+                        listaProvinciasProdMaxCant = lista2->dato.listaPronvicias;
+                    };
+                    lista2 = lista2->sig;
+                };
             };
-            aux = aux->sig;
         };
-        cout << "NroDock: " << i << " - Cantidad de despachos: " << contador << endl;
-        consolidarCantidadDespachos(listaProductos);
-        mostrar(listaProductos);
+        lista = lista->sig;
     };
 
-    //Punto 4
-    
-    //Buscar dock con menor cantidad de despachos.
-    
-    int minDespachos = INT_MAX;
-    int dockMinimo = -1;
-
-    for(int i = 0; i < dimNroDock; i++){
-        int totalDespachos = 0;
-        Nodo<Despacho>* aux = listaDespachos;
-
-        while(aux != nullptr){
-            if(aux->dato.nroDock == i){
-                totalDespachos++;
-            };
-            aux = aux->sig;
-        };
-        if(criterioMenor(totalDespachos, minDespachos) == 0){
-            minDespachos = totalDespachos;
-            dockMinimo = i;
-        };
-    };
-
-    //Buscar producto con mayor cantidad despachada. 
-    
-    Nodo<Despacho>* aux = listaDespachos;
-    Nodo<ProductoDock>* listaProductosDockMinimo = nullptr;
-
-    while(aux != nullptr){
-        if(aux->dato.nroDock == dockMinimo){
-            prodock.producto = aux->dato.producto;
-            prodock.cantidad = aux->dato.cantidad;
-            insertar(prodock, listaProductosDockMinimo, criterioProducto);
-        };
-        aux = aux->sig;
-    };
-    consolidarCantidadDespachos(listaProductosDockMinimo);
-    Nodo<ProductoDock>* aux2 = listaProductosDockMinimo;
-    Nodo<ProductoDock>* productoMayorCantidad = nullptr;
-    int minCantidadDespachada = INT_MIN;
-    
-    while(aux2 != nullptr){
-        int cantidadDespachada = aux2->dato.cantidad;
-        if(criterioMayor(cantidadDespachada, minCantidadDespachada) == 0){
-            minCantidadDespachada = cantidadDespachada;
-            prodock.producto = aux2->dato.producto;
-            prodock.cantidad = aux2->dato.cantidad;
-        };
-        aux2 = aux2->sig;
-    };
-    insertar(prodock, productoMayorCantidad, criterioProducto);
-    cout << "El dock con menos despachos es el: " << dockMinimo << " con " << minDespachos << " despachos." << endl;
+    cout << "\nEl dock con menos despachos es el: " << dockMinCant << " con " << despachosDockMinCant << " despachos." << endl;
     cout << "El producto con mayor cantidad despachada en este dock es:" << endl;
-    mostrar(productoMayorCantidad);
-
-    //Listar provincias de ese producto de ese dock.
-
-    Nodo<Despacho>* aux3 = listaDespachos;
-    Nodo<ProvinciaProducto>* listaProvincias = nullptr;
-    ProvinciaProducto provprod;
-
-    while(aux3 != nullptr){
-        if(aux3->dato.nroDock == dockMinimo && aux3->dato.producto == productoMayorCantidad->dato.producto){
-            provprod.provincia = aux3->dato.provincia;
-            provprod.cantidad = aux3->dato.cantidad;
-            insertar(provprod, listaProvincias, criterioProvinciaProducto);
-        };
-        aux3 = aux3->sig;
-    };
-    cout << "Lista de despachos" << endl;
+    cout << nomProdMaxCant << "\t" << cantProdMaxCant << endl;
+    cout << "Listado de despachos" << endl;
     cout << "Provincia\tCantidad" << endl;
-    mostrar(listaProvincias);
+    mostrar(listaProvinciasProdMaxCant);
+
     return 0;
 };
