@@ -4,48 +4,48 @@
 #include "rwstring.hpp"
 using namespace std;
 
-struct Registro{ //Registro
+struct Registro{
     string producto;
     string lote;
     int cantidad;
 };
 
-struct LoteCantidad{ //Nivel 2
+struct Lote{ //Nivel 2
     string lote;
     int cantidad;
 };
 
-struct ProductoCantidad{ //Nivel 1
+struct Producto{ //Nivel 1
     string producto;
-    int cantidad;
-    Nodo<LoteCantidad>* lista = nullptr;
+    int cantidad = 0;
+    Nodo<Lote>* listaLotes = nullptr;
 };
 
 const int lprod = 10;
 const int llote = 6;
 
-ostream& operator << (ostream& os, const ProductoCantidad& pc){
+ostream& operator << (ostream& os, const Producto& pc){
     os << pc.producto << "\t" << pc.cantidad;
     return os;
 };
 
-ostream& operator << (ostream& os, const LoteCantidad& lc){
+ostream& operator << (ostream& os, const Lote& lc){
     os << lc.lote << "\t" << lc.cantidad << endl;
     return os;
 };
 
-fstream& operator << (fstream& fs, Registro& reg){
+fstream& operator >> (fstream& fs, Registro& reg){
     reg.producto = readstring(fs, lprod);
     reg.lote = readstring(fs, llote);
     fs.read(reinterpret_cast<char *>(&reg.cantidad), sizeof(reg.cantidad));
     return fs;
 };
 
-int criterioProductoCantidad(ProductoCantidad a, ProductoCantidad b){
+int criterioProducto(Producto a, Producto b){
     return a.producto.compare(b.producto);
 };
 
-int criterioLoteCantidad(LoteCantidad a, LoteCantidad b){
+int criterioLote(Lote a, Lote b){
     return b.lote.compare(a.lote);
 };
 
@@ -53,21 +53,22 @@ int criterioMenor(int a, int b){
     return b-a;
 };
 
-void procesarDespachos(Nodo<ProductoCantidad>*& lista, Nodo<ProductoCantidad>*& pnodo, Nodo<ProductoCantidad>*& listaPedidos){
-    Nodo<ProductoCantidad>* aux = listaPedidos;
-    Nodo<ProductoCantidad>* listaFaltantes = nullptr;
+void procesarDespachos(Nodo<Producto>*& lista, Nodo<Producto>*& listaPedidos){
+    Nodo<Producto>* aux = listaPedidos;
+    Nodo<Producto>* listaFaltantes = nullptr;
+    Nodo<Producto>* pnodo;
 
     while(aux != nullptr){
-        pnodo = buscar(aux->dato, lista, criterioProductoCantidad);
-        if(pnodo == nullptr || pnodo->dato.cantidad < aux->dato.cantidad){
-            ProductoCantidad pc;
+        pnodo = buscar(aux->dato, lista, criterioProducto);
+        if(pnodo == nullptr || criterioMenor(aux->dato.cantidad, pnodo->dato.cantidad) < 0){
+            Producto pc;
             pc.producto = aux->dato.producto;
             pc.cantidad = (pnodo == nullptr) ? aux->dato.cantidad : (aux->dato.cantidad - pnodo->dato.cantidad);
             agregar(listaFaltantes, pc);
         };
         aux = aux->sig;
     };
-
+    
     if(listaFaltantes != nullptr){
         cout << "\nPedido rechazado. Listado de faltantes:" << endl;
         mostrar(listaFaltantes);
@@ -77,24 +78,21 @@ void procesarDespachos(Nodo<ProductoCantidad>*& lista, Nodo<ProductoCantidad>*& 
             cout << "\nPedido despachado" << endl;
         };
     };
-
+    
     while(listaPedidos != nullptr){
-        pnodo = buscar(listaPedidos->dato, lista, criterioProductoCantidad);
+        pnodo = buscar(listaPedidos->dato, lista, criterioProducto);
         cout << "Producto: " << listaPedidos->dato.producto << " - Cantidad total: " << listaPedidos->dato.cantidad << " - Detalle de los lotes:" << endl;
-        Nodo<LoteCantidad>* nodolc = pnodo->dato.lista;
+        Nodo<Lote>* nodolc = pnodo->dato.listaLotes;
         int cantidadPedida = listaPedidos->dato.cantidad;
-
         while(nodolc != nullptr && cantidadPedida > 0){
             int cantidadUsada = (criterioMenor(nodolc->dato.cantidad, cantidadPedida) < 0) ? cantidadPedida : nodolc->dato.cantidad;
             cout << nodolc->dato.lote << "\t" << cantidadUsada << endl;
-
             nodolc->dato.cantidad -= cantidadUsada;
             cantidadPedida -= cantidadUsada;
-
             if(nodolc->dato.cantidad == 0){
-                Nodo<LoteCantidad>* aux = nodolc;
+                Nodo<Lote>* aux = nodolc;
                 nodolc = nodolc->sig;
-                borrar(aux->dato, pnodo->dato.lista, criterioLoteCantidad);
+                borrar(aux->dato, pnodo->dato.listaLotes, criterioLote);
             } else {
                 nodolc = nodolc->sig;
             };
@@ -104,10 +102,10 @@ void procesarDespachos(Nodo<ProductoCantidad>*& lista, Nodo<ProductoCantidad>*& 
     };
 };
 
-void realizarDespachos(Nodo<ProductoCantidad>*& lista, Nodo<ProductoCantidad>*& pnodo){
+void realizarDespachos(Nodo<Producto>*& lista){
     while(true){
-        Nodo<ProductoCantidad>* listaPedidos = nullptr;
-        ProductoCantidad pc;
+        Nodo<Producto>* listaPedidos = nullptr;
+        Producto pc;
 
         cout << "\nIngrese un nuevo pedido:" << endl;
         cout << "Producto: ";
@@ -129,7 +127,7 @@ void realizarDespachos(Nodo<ProductoCantidad>*& lista, Nodo<ProductoCantidad>*& 
             };
         };
 
-        procesarDespachos(lista, pnodo, listaPedidos);
+        procesarDespachos(lista, listaPedidos);
         cin.clear();
     };
 };
@@ -145,19 +143,19 @@ int main(){
         cout << "No se pudo abrir el archivo 'Datos.bin'" << endl;
         return EXIT_FAILURE;
     };
-    Nodo<ProductoCantidad>* lista = nullptr;
-    Nodo<ProductoCantidad>* pnodo;
-    ProductoCantidad pc;
-    LoteCantidad lc;
+    Nodo<Producto>* lista = nullptr;
+    Nodo<Producto>* pnodo;
+    Producto pc;
+    Lote lc;
     Registro reg;
-    while(archivo << reg){
+    while(archivo >> reg){
         pc.producto = reg.producto;
-        pnodo = insertar_unico(pc, lista, criterioProductoCantidad);
+        pnodo = insertar_unico(pc, lista, criterioProducto);
         pnodo->dato.cantidad += reg.cantidad;
         
         lc.lote = reg.lote;
         lc.cantidad = reg.cantidad;
-        insertar(lc, pnodo->dato.lista, criterioLoteCantidad);
+        insertar(lc, pnodo->dato.listaLotes, criterioLote);
     };
     archivo.close();
 
@@ -169,7 +167,7 @@ int main(){
 
     //Punto 4
 
-    realizarDespachos(lista, pnodo);
+    realizarDespachos(lista);
 
     //Punto 5
     cout << "Producto\tCantidad" << endl;
